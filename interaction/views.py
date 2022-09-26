@@ -1,13 +1,26 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+from .models import Participant
 
 
-def check_if_participants_exists(
-    request,
-):  # verifica se existe e caso exista retorna mensagem de sucesso e pedido de número
-    if (
-        request.method == "GET"
-    ):  # para conexão, caso contrário, pede para a pessoa dizer seu nome para criar a pessoa participante;
-        ...
+def check_if_participants_exists(request):
+    if request.method == "GET":
+        if "alexaid" in request.GET:
+            participant = Participant.objects.all().filter(
+                alexa_id=request.GET["alexaid"]
+            )
+            if len(participant) == 0:
+                return JsonResponse(
+                    {"answer": "Por qual nome você quer que eu te chame?"}
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "answer": f"Olá {participant[0].name}. Diga: Criar uma conexão caso deseje começar uma conexão. Ou. Diga: Conectar à. e em seguida o número da conexão"
+                    }
+                )
+        else:
+            return JsonResponse({"error": "missing necessary parameter"})
 
 
 def create_participant(
