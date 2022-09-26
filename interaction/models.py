@@ -29,7 +29,7 @@ class InteractionConnection(models.Model):
 
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    pin = models.CharField(max_length=5, unique=True, default=create_new_pin_number)
+    pin = models.CharField(max_length=5, unique=True, default=create_new_pin_number, editable=False)
     connection_status = models.CharField(max_length=30, choices=status_list)
     participants = models.JSONField()
     turn = models.ForeignKey(Participant, on_delete=models.CASCADE)
