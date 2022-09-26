@@ -14,7 +14,7 @@ class InteractionConnection(models.Model):
         not_unique = True
         while not_unique:
             unique_pin = random.randint(10000, 99999)
-            if not InteractionConnection.objects.filter(Referrence_Number=unique_pin):
+            if not InteractionConnection.objects.filter(pin=unique_pin):
                 not_unique = False
         return str(unique_pin)
 
@@ -22,8 +22,6 @@ class InteractionConnection(models.Model):
     status_list = [
         ("Aguardando participantes", "Aguardando participantes"),
         ("Conexão estabelecidada", "Conexão estabelecidada"),
-        ("Turno da pessoa 1", "Turno da pessoa 1 "),
-        ("Turno da pessoa 2", "Turno da pessoa 2 "),
         ("Conexão Finalizada", "Conexão Finalizada"),
     ]
 
