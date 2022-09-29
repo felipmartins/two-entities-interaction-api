@@ -1,7 +1,8 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from .models import Participant, InteractionConnection
+from datetime import datetime
+from .models import Participant, InteractionConnection, Messenger
 
 
 def check_if_participants_exists(request):
@@ -90,6 +91,10 @@ def check_if_connection_exists(request):
                             con.participants["two"] = participant.alexa_id
                             con.connection_status = "Conexão estabelecidada"
                             con.save()
+                            messenger = Messenger(
+                                connection=con, messages={"messages": []}
+                            )
+                            messenger.save()
                             return JsonResponse(
                                 {
                                     "answer": "Conexão estabelecida, podemos começar a comunicação"
@@ -108,13 +113,14 @@ def check_if_connection_exists(request):
     else:
         return JsonResponse({"answer": "not found"})
 
+
 @csrf_exempt
 def create_connection(request):
     if request.method == "POST":
         if "alexaid" in request.POST:
-            
+
             participant = Participant.objects.all().filter(
-                    alexa_id=request.POST["alexaid"]
+                alexa_id=request.POST["alexaid"]
             )
 
             if len(participant) == 0:
@@ -125,22 +131,58 @@ def create_connection(request):
                 )
             else:
                 participant = participant[0]
-                con = InteractionConnection(connection_status="Aguardando participantes",participants={"one":participant.alexa_id},turn=participant)
+                con = InteractionConnection(
+                    connection_status="Aguardando participantes",
+                    participants={"one": participant.alexa_id},
+                    turn=participant,
+                )
                 con.save()
-                return JsonResponse({"answer": f"Conexão criada com sucesso, aguardando outra pessoa para começar. O pin para conexão é {con.pin}"})
+                return JsonResponse(
+                    {
+                        "answer": f"Conexão criada com sucesso, aguardando outra pessoa para começar. O pin para conexão é {con.pin}"
+                    }
+                )
         else:
             return JsonResponse({"answer": "missing id"})
     else:
         return JsonResponse({"answer": "not found"})
 
 
-def check_number_of_participants(request):
-    ...
-
-
-def check_whos_turn_is(request):
-    ...
-
-
+@csrf_exempt
 def send_message(request):
-    ...
+    if request.method == "POST":
+        if "uuid" in request.POST:
+            if "alexaid" in request.POST:
+                if "message" in request.POST:
+                    messenger = get_object_or_404(Messenger, uuid=request.POST["uuid"])
+                    con = messenger.connection
+                    if con.turn.alexa_id == request.POST["alexaid"]:
+                        messenger.messages["messages"].append(
+                            {
+                                str(datetime.now()): (
+                                    request.POST["alexaid"],
+                                    request.POST["message"],
+                                )
+                            }
+                        )
+                        if con.participants["one"] == request.POST["alexaid"]:
+                            con.turn = Participant.objects.all().filter(
+                                alexa_id=con.participants["two"]
+                            )[0]
+                        else:
+                            con.turn = Participant.objects.all().filter(
+                                alexa_id=con.participants["one"]
+                            )[0]
+                        con.save()
+                        messenger.save()
+                        return JsonResponse({"answer": "Sucess!"})
+                    else:
+                        return JsonResponse({"answer": "it is not your turn"})
+                else:
+                    return JsonResponse({"answer": "missing content message"})
+            else:
+                return JsonResponse({"answer": "missing id"})
+        else:
+            return JsonResponse({"answer": "missing messenger uuid"})
+    else:
+        return JsonResponse({"answer": "not found"})
