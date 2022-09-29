@@ -32,3 +32,9 @@ class InteractionConnection(models.Model):
     participants = models.JSONField()
     turn = models.ForeignKey(Participant, on_delete=models.CASCADE)
 
+
+class Messenger(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    connection = models.ForeignKey(InteractionConnection, on_delete=models.CASCADE)
+    messages = models.JSONField()
+
